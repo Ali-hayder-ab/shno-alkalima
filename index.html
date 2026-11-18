@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>شنو الكلمة؟</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Layout idea: one quiet column. The board is the only thing with colour; everything else is cool grey. */
+  --bg: hsl(220 24% 97%);
+  --surface: hsl(0 0% 100%);
+  --ink: hsl(226 32% 12%);
+  --ink-2: hsl(222 12% 44%);
+  --line: hsl(222 18% 87%);
+  --line-strong: hsl(222 12% 64%);
+  --key: hsl(222 22% 91%);
+  --key-press: hsl(222 18% 83%);
+  --correct: hsl(158 62% 34%);
+  --present: hsl(41 96% 50%);
+  --absent: hsl(222 11% 54%);
+  --on-state: hsl(0 0% 100%);
+  --on-present: hsl(28 70% 12%);
+  --scrim: hsl(226 30% 8% / 0.45);
+  --gloss: inset 0 1px 0 hsl(0 0% 100% / 0.22), inset 0 -2px 0 hsl(0 0% 0% / 0.10);
+  --shadow-sm: 0 1px 2px hsl(226 30% 10% / 0.06);
+  --shadow-lg: 0 12px 24px -6px hsl(226 30% 10% / 0.12), 0 4px 8px -4px hsl(226 30% 10% / 0.08);
+  --font: "Vazirmatn", system-ui, -apple-system, "Segoe UI", "Noto Sans Arabic", Tahoma, sans-serif;
+  --tile: min(calc((100dvh - 420px) / 6), calc((100vw - 64px) / 5), 62px);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: hsl(228 26% 8%); --surface: hsl(228 20% 13%); --ink: hsl(222 30% 95%); --ink-2: hsl(222 14% 66%);
+    --line: hsl(228 16% 21%); --line-strong: hsl(226 12% 44%); --key: hsl(228 16% 20%); --key-press: hsl(228 14% 27%);
+    --correct: hsl(158 56% 40%); --present: hsl(42 94% 56%); --absent: hsl(228 12% 27%);
+    --on-present: hsl(28 70% 10%);
+    --gloss: inset 0 1px 0 hsl(0 0% 100% / 0.14), inset 0 -2px 0 hsl(0 0% 0% / 0.18);
+    --scrim: hsl(228 30% 2% / 0.6);
+    --shadow-lg: 0 12px 24px -6px hsl(0 0% 0% / 0.5), 0 4px 8px -4px hsl(0 0% 0% / 0.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: hsl(228 26% 8%); --surface: hsl(228 20% 13%); --ink: hsl(222 30% 95%); --ink-2: hsl(222 14% 66%);
+  --line: hsl(228 16% 21%); --line-strong: hsl(226 12% 44%); --key: hsl(228 16% 20%); --key-press: hsl(228 14% 27%);
+  --correct: hsl(158 56% 40%); --present: hsl(42 94% 56%); --absent: hsl(228 12% 27%);
+  --on-present: hsl(28 70% 10%);
+  --gloss: inset 0 1px 0 hsl(0 0% 100% / 0.14), inset 0 -2px 0 hsl(0 0% 0% / 0.18);
+  --scrim: hsl(228 30% 2% / 0.6);
+  --shadow-lg: 0 12px 24px -6px hsl(0 0% 0% / 0.5), 0 4px 8px -4px hsl(0 0% 0% / 0.4);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font-family: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.app {
+  height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Header: one title, one quiet control */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spacing: 0; }
+.sub { margin: 0; font-size: 14px; color: var(--ink-2); }
+.ghost {
+  flex: none;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  padding: 0;
+  background: var(--key);
+  color: var(--ink-2);
+  border: 0;
+  border-radius: 999px;
+  transition: background-color 150ms ease, color 150ms ease, transform 120ms ease;
+}
+.ghost svg { width: 22px; height: 22px; display: block; transform: scaleX(-1); /* Arabic ؟ faces the other way */ }
+.ghost:hover { color: var(--ink); }
+.ghost:active { background: var(--key-press); transform: scale(0.94); transition-duration: 0s; }
+
+/* Mode switch: segmented control */
+.modes { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--key); border-radius: 10px; }
+.seg button {
+  padding: 4px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink-2);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
+.meta { display: flex; align-items: center; gap: 8px; }
+.streak {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 26px; padding: 0 10px 0 8px;
+  border-radius: 999px;
+  background: var(--key);
+  color: var(--ink-2);
+  font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.streak svg { width: 14px; height: 14px; fill: currentColor; }
+.streak b { font-weight: 700; }
+.streak[hidden] { display: none; }
+#streak-unit { font-size: 12px; font-weight: 500; }
+.streak.on { background: hsl(24 95% 52% / 0.14); color: hsl(20 90% 44%); }
+.streak.bump { animation: bump 500ms cubic-bezier(.3,1.6,.5,1); }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0 4px; padding: 12px 0; border-block: 1px solid var(--line); }
+.stats[hidden] { display: none; }
+.stats div { display: flex; flex-direction: column-reverse; align-items: center; gap: 2px; }
+.stats dt { font-size: 12px; color: var(--ink-2); }
+.stats dd { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.game-no { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* Board */
+.stage { flex: 1; min-height: 0; container-type: size; display: flex; align-items: center; justify-content: center; position: relative; }
+#board { display: grid; gap: 6px; }
+@supports (container-type: size) {
+  #board { --tile: min(calc((100cqh - 30px) / 6), calc((100cqw - 24px) / 5), 62px); }
+}
+.row { display: grid; grid-template-columns: repeat(5, var(--tile)); gap: 6px; }
+.tile {
+  width: var(--tile);
+  height: var(--tile);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 3px;
+  font-size: calc(var(--tile) * 0.5);
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 8px;
+  background: transparent;
+  border: 2px solid var(--line);
+  color: var(--ink);
+  user-select: none;
+  transition-property: background-color, border-color, color;
+  transition-duration: 0s;
+}
+.tile[data-state="tbd"] { border-color: var(--line-strong); animation: pop 160ms cubic-bezier(.2,.8,.2,1); }
+.tile[data-state="correct"] { box-shadow: var(--gloss); background: var(--correct); border-color: var(--correct); color: var(--on-state); }
+.tile[data-state="present"] { box-shadow: var(--gloss); background: var(--present); border-color: var(--present); color: var(--on-present); }
+.tile[data-state="absent"]  { box-shadow: var(--gloss); background: var(--absent);  border-color: var(--absent);  color: var(--on-state); }
+.row.reveal .tile {
+  animation: flip 420ms cubic-bezier(.4,0,.2,1) both;
+  animation-delay: calc(var(--i) * 200ms);
+  transition-delay: calc(var(--i) * 200ms + 210ms);
+}
+.row.shake { animation: shake 360ms cubic-bezier(.36,.07,.19,.97); }
+@keyframes pop { from { transform: scale(0.9); } to { transform: scale(1); } }
+@keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+@keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+/* Toast: a floating pill of material, not a slab */
+#toast {
+  position: fixed;
+  top: max(20px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translate(-50%, -6px) scale(0.96);
+  width: max-content;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 260ms cubic-bezier(.2,.8,.2,1);
+  z-index: 2;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+/* Keyboard */
+#keyboard { display: grid; gap: 8px; direction: ltr; }
+.krow { display: flex; gap: 5px; justify-content: center; }
+.key {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: calc((100% - 50px) / 11);
+  height: 48px;
+  padding: 0 0 3px;
+  font-size: 18px;
+  font-weight: 600;
+  background: var(--key);
+  color: var(--ink);
+  border: 0;
+  border-radius: 6px;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+.key:active { background: var(--key-press); transform: scale(0.94); transition-duration: 0s; }
+.key[data-state="correct"] { background: var(--correct); color: var(--on-state); }
+.key[data-state="present"] { background: var(--present); color: var(--on-present); }
+.key[data-state="absent"]  { background: var(--bg); color: var(--line-strong); box-shadow: inset 0 0 0 1.5px var(--line); }
+.key.wide { font-size: 15px; }
+.key.wide { max-width: none; }
+.key.enter { flex: 2 1 0; background: var(--ink); color: var(--bg); font-weight: 700; }
+.key.del { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); color: var(--ink-2); }
+
+/* Result card replaces the keyboard when a game ends */
+#result {
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 20px;
+  display: grid;
+  gap: 4px;
+  animation: rise 360ms cubic-bezier(.2,.8,.2,1);
+}
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+#result[hidden], #keyboard[hidden], #share-text[hidden] { display: none; }
+.verdict { margin: 0; font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.answer { margin: 0; font-size: 36px; font-weight: 800; line-height: 1.25; }
+.gloss { margin: 0; font-size: 16px; }
+.gloss span { color: var(--ink-2); }
+.next { margin: 4px 0 0; font-size: 14px; color: var(--ink-2); }
+.next:empty { display: none; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.btn {
+  flex: 1 1 140px;
+  height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 0;
+  background: var(--ink);
+  color: var(--bg);
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+.btn:active { transform: scale(0.97); opacity: 0.85; transition-duration: 0s; }
+.btn.quiet { background: var(--key); color: var(--ink); font-weight: 600; }
+#share-text {
+  width: 100%;
+  min-height: 140px;
+  margin-top: 8px;
+  padding: 12px;
+  font: 14px/1.5 var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  resize: none;
+}
+
+/* Help sheet */
+dialog {
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100% - 32px);
+  padding: 24px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 0;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+}
+dialog[open] { animation: rise 320ms cubic-bezier(.2,.8,.2,1); }
+dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+dialog h2 { margin: 0 0 8px; font-size: 20px; font-weight: 800; }
+dialog p { margin: 0 0 16px; }
+.legend { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 12px; }
+.legend li { display: flex; align-items: center; gap: 12px; font-size: 15px; }
+.legend .tile { --tile: 36px; flex: none; border-radius: 6px; }
+.rules { list-style: none; margin: 0 0 8px; padding: 16px 0 0; border-top: 1px solid var(--line); display: grid; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.rules li { padding-inline-start: 14px; position: relative; }
+.rules li::before { content: ""; position: absolute; inset-inline-start: 0; top: 0.7em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+.nb { white-space: nowrap; }
+dialog .btn { width: 100%; margin-top: 8px; }
+
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .streak.on { color: hsl(28 95% 62%); background: hsl(24 95% 55% / 0.16); } }
+:root[data-theme="dark"] .streak.on { color: hsl(28 95% 62%); background: hsl(24 95% 55% / 0.16); }
+@media (prefers-reduced-motion: reduce) {
+  .streak.bump { animation: none; }
+  .tile, .row.reveal .tile, .row.shake, #result, dialog[open] { animation: none; transition-delay: 0s; }
+  #toast { transition: opacity 150ms ease; transform: translate(-50%, 0); }
+  .key:active, .btn:active { transform: none; }
+}
+@media (prefers-contrast: more) {
+  :root { --line: var(--line-strong); --ink-2: var(--ink); }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div>
+      <h1>شنو الكلمة؟</h1>
+      <p class="sub">عندك ست فرص تحزر الكلمة</p>
+    </div>
+    <button class="ghost" id="help-open" type="button" aria-label="شلون ألعب؟" title="شلون ألعب؟"><svg viewBox="6 4 12 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 8.6a3 3 0 0 1 6 0.6c0 2.2-3 2.6-3 5.2"/><circle cx="12" cy="18.6" r="0.6" fill="currentColor" stroke="none"/></svg></button>
+  </header>
+
+  <div class="modes">
+    <div class="seg" role="group" aria-label="نوع اللعبة">
+      <button type="button" id="mode-daily" aria-pressed="true">كلمة اليوم</button>
+      <button type="button" id="mode-practice" aria-pressed="false">تدريب</button>
+    </div>
+    <div class="meta">
+      <span class="game-no" id="game-no"></span>
+      <span class="streak" id="streak" title="أيام متتالية فزت بيها بكلمة اليوم">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.6 3.2-1.4 4.9-2.9 6.6C7.6 10.8 6.5 12.6 6.5 15a5.5 5.5 0 0 0 11 0c0-2.1-.9-3.7-2-5 .1 1.6-.5 2.8-1.6 3.4.3-3.9-1-7.6-1.9-10.9Z"/></svg>
+        <b id="streak-n">0</b><span id="streak-unit"></span>
+      </span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="board" aria-label="لوحة المحاولات"></div>
+  </div>
+
+  <div id="keyboard" aria-label="لوحة الحروف"></div>
+
+  <section id="result" hidden aria-live="polite">
+    <p class="verdict" id="verdict"></p>
+    <p class="answer" id="answer-word"></p>
+    <p class="gloss"><span>بالفصحى: </span><b id="answer-gloss"></b></p>
+    <dl class="stats" id="stats" hidden>
+      <div><dt>لعبت</dt><dd id="st-played">0</dd></div>
+      <div><dt>فزت</dt><dd id="st-rate">0%</dd></div>
+      <div><dt>السلسلة</dt><dd id="st-streak">0</dd></div>
+      <div><dt>أطول سلسلة</dt><dd id="st-best">0</dd></div>
+    </dl>
+    <p class="next" id="next-note"></p>
+    <div class="actions">
+      <button class="btn" type="button" id="again">كلمة ثانية</button>
+      <button class="btn quiet" type="button" id="share">انسخ النتيجة</button>
+    </div>
+    <textarea id="share-text" hidden readonly aria-label="نص النتيجة"></textarea>
+  </section>
+</main>
+
+<dialog id="help" aria-labelledby="help-title">
+  <h2 id="help-title">شلون تنلعب؟</h2>
+  <p>الكلمة خمس حروف وبالعراقي: أكل، أماكن، سوالف، وأغراض البيت. عندك ست محاولات.</p>
+  <ul class="legend">
+    <li><span class="tile" data-state="correct">گ</span><span>الحرف بمكانه الصح.</span></li>
+    <li><span class="tile" data-state="present">چ</span><span>الحرف موجود، بس مو بهذا المكان.</span></li>
+    <li><span class="tile" data-state="absent">پ</span><span>الحرف مو بالكلمة أبد.</span></li>
+  </ul>
+  <ul class="rules">
+    <li>كل محاولة لازم تكون كلمة حقيقية، فصحى لو عراقي.</li>
+    <li>بدون همزة: <span class="nb">أ إ آ</span> تنكتب ا، ؤ تنكتب و، ئ تنكتب ي.</li>
+    <li><span class="nb">چ گ پ</span> حروف مستقلة عن <span class="nb">ج ك ب</span>.</li>
+    <li>الكلمة اللي لاصق بيها و ف ب ك ل بالبداية ما تنقبل، مثل <span class="nb">وكتبت</span>.</li>
+    <li>كلمة اليوم وحدة لكل الناس، وتتبدل نص الليل بتوقيت بغداد.</li>
+  </ul>
+  <button class="btn" type="button" id="help-close">يلا نلعب</button>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  // Spelling convention: no hamza, no shadda, ة kept, چ گ پ as their own letters.
+  const WORDS = [
+    ["شلونك","كيف حالك؟"],["اشلون","كيف"],["شخبار","ما الأخبار؟"],["شتريد","ماذا تريد؟"],
+    ["شدعوة","ما القصة؟ ولماذا كل هذا؟"],["شتسوي","ماذا تفعل؟"],["شعندك","ماذا لديك؟"],
+    ["يمعود","يا رجل! تقال للرجاء أو التعجب"],["اغاتي","سيدي، عزيزي"],["عيوني","يا عزيزي، وحرفيا: عيناي"],
+    ["عوافي","بالهناء والشفاء"],["ممنون","شاكر لك"],["هواية","كثير"],["بعدني","ما زلت"],["بعدين","لاحقا"],
+    ["عوفني","اتركني"],["خليني","دعني"],["والله","قسم يدخل في كل جملة"],["يالله","هيا بنا"],["وياكم","معكم"],
+    ["حبيبي","كلمة تحبب تقال للجميع"],
+    ["زعطوط","ولد صغير، أو من يتصرف كالصغار"],["بزران","أطفال"],["نسوان","نساء"],["رفيجي","صديقي"],
+    ["حرامي","لص"],["سرسري","متسكع سيئ الخلق"],["شقاوة","فتوة الحي أيام زمان"],["چايچي","صانع الشاي وبائعه"],
+    ["مختار","مسؤول المحلة"],["عشيرة","قبيلة"],["حبوبة","الجدة"],
+    ["سرداب","قبو"],["مبردة","مكيف هواء يعمل بالماء"],["مولدة","مولد كهرباء"],["وطنية","كهرباء الدولة"],
+    ["امبير","وحدة الاشتراك بمولدة الحي"],["كنتور","خزانة الملابس"],["خاولي","منشفة"],["ماعون","صحن"],
+    ["جدرية","قدر الطبخ"],["صوندة","خرطوم الماء"],["تانكي","خزان الماء"],["حنفية","صنبور"],
+    ["بورية","أنبوب، ومجازا: مقلب"],["بلوعة","فتحة تصريف المياه"],["زبالة","قمامة"],["مراية","مرآة"],
+    ["مشتمل","بيت صغير ملحق بالدار"],["طابوگ","طوب البناء"],["قنينة","قارورة"],
+    ["چاكوچ","مطرقة"],["سپانة","مفتاح ربط"],["پلايس","كماشة"],["سكراب","خردة"],
+    ["قندرة","حذاء"],["قمصلة","سترة"],["يشماغ","كوفية الرأس"],["عباية","عباءة"],
+    ["سدارة","القبعة البغدادية الفيصلية"],["تراچي","أقراط"],["پوشية","خمار يغطي الوجه"],["بابوج","خف"],
+    ["كشاخة","أناقة وتباه"],
+    ["طماطة","طماطم"],["پتيتة","بطاطا"],["لهانة","ملفوف"],["شوندر","شمندر"],["باگلة","فول"],
+    ["بامية","بامياء"],["لوبيا","لوبياء"],["عرموط","كمثرى"],["عنجاص","برقوق"],
+    ["دولمة","خضار وورق عنب محشوة"],["تشريب","ثريد"],["مسگوف","سمك مشوي على الطريقة العراقية"],
+    ["معلاگ","كبد وقلب مشويان"],["مخلمة","بيض مع لحم مفروم"],["لبلبي","حمص مسلوق"],
+    ["فلافل","أقراص الحمص المقلية"],["صمونة","رغيف الصمون"],["كليچة","معمول العيد العراقي"],
+    ["داطلي","حلوى مقلية بالقطر"],["حلاوة","حلوى"],["شنينة","لبن مخفوق بالماء"],["چكليت","حلوى، شوكولاتة"],
+    ["نستلة","شوكولاتة"],["كرزات","مكسرات"],["هريسة","أكلة القمح واللحم"],["شوربة","حساء"],["دهينة","حلوى نجفية"],
+    ["بزونة","قطة"],["هايشة","بقرة"],["جريدي","فأر"],["حصيني","ثعلب"],["ذبانة","ذبابة"],["زنبور","دبور"],
+    ["جاموس","حيوان الأهوار الأول"],["زرزور","طائر الزرزور"],["عگربة","عقرب"],
+    ["بغداد","عاصمة العراق"],["اربيل","مدينة القلعة في الشمال"],["كركوك","مدينة النفط والنار الأزلية"],
+    ["النجف","مدينة في الفرات الأوسط"],["تكريت","مركز محافظة صلاح الدين"],
+    ["ميسان","محافظة في الجنوب مركزها العمارة"],["الكوت","مركز محافظة واسط"],["الحلة","مركز محافظة بابل"],
+    ["شورجة","أشهر أسواق بغداد"],["متنبي","شارع الكتب في بغداد"],["اهوار","مسطحات الماء والقصب في الجنوب"],
+    ["مشحوف","قارب الأهوار"],["صريفة","كوخ من القصب"],["بستان","حديقة نخيل وفاكهة"],
+    ["واسطة","محسوبية"],["تعيين","وظيفة حكومية"],["دايرة","دائرة حكومية"],["سيطرة","نقطة تفتيش"],
+    ["جنسية","هوية الأحوال المدنية"],["تموين","الحصة التموينية"],["دينار","العملة العراقية"],
+    ["كوستر","حافلة صغيرة"],["ستوتة","دراجة نارية بثلاث عجلات"],["ماطور","محرك، دراجة نارية"],
+    ["ستيرن","مقود السيارة"],["دشبول","لوحة القيادة في السيارة"],["بنزين","وقود السيارات"],
+    ["بسطية","بسطة بيع في الشارع"],
+    ["محيبس","لعبة الخاتم الرمضانية"],["طاولي","لعبة النرد"],["دومنة","لعبة الدومينو"],
+    ["دارمي","لون من الشعر الشعبي"],["زهيري","لون من الموال العراقي"],["چالغي","فرقة المقام البغدادي"],
+    ["سنطور","آلة وترية في المقام العراقي"],["ربابة","آلة وترية بدوية"],["خشابة","فن إيقاعي بصري"],
+    ["هوسات","أهازيج عشائرية"],["نيشان","خطوبة"],["عيدية","نقود العيد للأطفال"],["رمضان","شهر الصوم"],
+    ["سوالف","أحاديث"],["سالفة","حكاية، موضوع"],["حچاية","كلام، حكاية"],["تحشيش","مزاح وفكاهة"],["راشدي","صفعة"],
+    ["تعبان","متعب"],["جوعان","جائع"],["عطشان","ظمآن"],["نعسان","يغالبه النوم"],["زعلان","غاضب أو حزين"],
+    ["فرحان","سعيد"],["بردان","يشعر بالبرد"],["خربان","معطل"],["مزروف","مثقوب"],["مخربط","مبعثر، غير مرتب"],
+    ["عتيگة","قديمة"],["زغيرة","صغيرة"],["چبيرة","كبيرة"],["حلوين","جميلون"],["زينين","بخير"],
+    ["بلاوي","مصائب"],["بسيطة","لا بأس، أمر هين"],
+    ["يباوع","ينظر"],["يفتهم","يفهم"],["يتريگ","يتناول الفطور"],["يتونس","يستمتع بوقته"],["يتاني","ينتظر"],
+    ["يتخبل","يجن"],["يشتغل","يعمل"],["اشوفك","أراك"],["انطيك","أعطيك"],
+    ["زردوم","بلعوم"],["شوارب","شنب"]
+  ];
+
+  const ROWS = 6, LEN = 5, N = WORDS.length;
+  const KEY_ROWS = ["ضصثقفغعهخحج", "شسيبلاتنمكط", "چگپرةوزظدذ"];
+  const VALID = new Set(KEY_ROWS.join(""));
+  const NORMAL = { "أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا", "ى": "ي", "ی": "ي", "ک": "ك", "ھ": "ه", "ہ": "ه" };
+  const DAY_MS = 86400000;
+  const EPOCH_DAY = Math.floor(Date.UTC(2026, 10, 16) / DAY_MS);
+  const STORE_KEY = "shno-alkalima-daily";
+  const WIN_LINES = ["من أول ضربة! أسطورة", "عبقري والله", "عاشت ايدك", "خوش شغل", "زين، لحّگت", "بالگوة، بس صارت"];
+  const RANK = { absent: 1, present: 2, correct: 3 };
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Same shuffled order for everyone, so the daily word does not walk the list by category.
+  function seededOrder(n) {
+    let s = 20261116;
+    const rnd = () => {
+      s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const a = Array.from({ length: n }, (_, i) => i);
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const ORDER = seededOrder(N);
+  const baghdadDay = () => Math.floor((Date.now() + 3 * 3600000) / DAY_MS);
+  const dailyIndex = (day) => ORDER[(((day - EPOCH_DAY) % N) + N) % N];
+
+  function score(guess, answer) {
+    const g = Array.from(guess), a = Array.from(answer);
+    const out = Array(LEN).fill("absent");
+    const left = {};
+    for (let i = 0; i < LEN; i++) {
+      if (g[i] === a[i]) out[i] = "correct";
+      else left[a[i]] = (left[a[i]] || 0) + 1;
+    }
+    for (let i = 0; i < LEN; i++) {
+      if (out[i] !== "correct" && left[g[i]] > 0) { out[i] = "present"; left[g[i]]--; }
+    }
+    return out;
+  }
+
+  // ---------- dictionary of accepted guesses (loaded after the page shows) ----------
+  // words.txt = base64(gzip(all words concatenated)), each letter stored as one ASCII char in keyboard order.
+  const ALPHA = KEY_ROWS.join("");
+  const encode = (w) => Array.from(w).map((c) => String.fromCharCode(65 + ALPHA.indexOf(c))).join("");
+  let dict = null;          // Set of encoded words once loaded
+  let dictState = "loading"; // loading | ready | off
+  async function loadDict() {
+    try {
+      if (typeof DecompressionStream === "undefined") throw new Error("no gzip support");
+      const res = await fetch("words.txt");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const bin = Uint8Array.from(atob((await res.text()).trim()), (c) => c.charCodeAt(0));
+      const text = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+      const set = new Set();
+      for (let i = 0; i + LEN <= text.length; i += LEN) set.add(text.slice(i, i + LEN));
+      WORDS.forEach(([w]) => set.add(encode(w)));
+      dict = set;
+      dictState = "ready";
+    } catch (e) {
+      dictState = "off"; // old browser or offline: fall back to accepting any five letters
+    }
+  }
+  const isWord = (w) => dictState !== "ready" || dict.has(encode(w));
+
+  // ---------- state ----------
+  let mode = "daily";
+  const games = { daily: null, practice: null };
+  let locked = false;
+  const game = () => games[mode];
+
+  function settle(g) {
+    const answer = WORDS[g.wi][0];
+    g.won = g.guesses.includes(answer);
+    g.over = g.won || g.guesses.length >= ROWS;
+    return g;
+  }
+  function cleanGuesses(list) {
+    if (!Array.isArray(list)) return [];
+    return list.filter((w) => typeof w === "string" && Array.from(w).length === LEN && Array.from(w).every((c) => VALID.has(c))).slice(0, ROWS);
+  }
+  function freshDaily() {
+    const day = baghdadDay();
+    const g = { day, wi: dailyIndex(day), guesses: [], current: "" };
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      if (saved && saved.day === day) g.guesses = cleanGuesses(saved.guesses);
+    } catch (e) { /* storage unavailable: play without it */ }
+    return settle(g);
+  }
+  function freshPractice() {
+    let wi;
+    do { wi = Math.floor(Math.random() * N); }
+    while (wi === games.daily.wi || (games.practice && wi === games.practice.wi));
+    return settle({ wi, guesses: [], current: "" });
+  }
+  // ---------- streak (daily word only, kept in this browser) ----------
+  const STATS_KEY = "shno-alkalima-stats";
+  let results = {};
+  try { results = JSON.parse(localStorage.getItem(STATS_KEY) || "{}").results || {}; } catch (e) { results = {}; }
+  function recordDaily(g) {
+    if (!g.over || results[g.day]) return false;
+    results[g.day] = { w: g.won, n: g.guesses.length };
+    try { localStorage.setItem(STATS_KEY, JSON.stringify({ results })); } catch (e) { /* ignore */ }
+    return true;
+  }
+  function stats() {
+    const today = baghdadDay();
+    let d = results[today] ? today : today - 1, streak = 0;
+    while (results[d] && results[d].w) { streak++; d--; }
+    const days = Object.keys(results).map(Number).sort((a, b) => a - b);
+    let best = 0, run = 0, prev = null, wins = 0;
+    for (const day of days) {
+      if (results[day].w) { wins++; run = prev === day - 1 && run ? run + 1 : 1; best = Math.max(best, run); }
+      else run = 0;
+      prev = day;
+    }
+    return { streak, best, played: days.length, rate: days.length ? Math.round((wins / days.length) * 100) : 0 };
+  }
+  // Arabic counting: 1 يوم، 2 يومين، 3–10 أيام، 11+ يوم
+  const daysWord = (n) => (n === 1 ? "يوم" : n === 2 ? "يومين" : n >= 3 && n <= 10 ? "أيام" : "يوم");
+  function renderStreak(bump) {
+    const st = stats(), el = $("streak");
+    el.hidden = st.streak === 0; // nothing to show until the first win
+    $("streak-n").textContent = st.streak === 2 ? "" : st.streak;
+    $("streak-unit").textContent = daysWord(st.streak);
+    el.setAttribute("aria-label", "سلسلة " + (st.streak === 2 ? "يومين" : st.streak + " " + daysWord(st.streak)) + " متتالية");
+    el.classList.toggle("on", st.streak > 0);
+    if (bump && !reduced) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+    $("st-played").textContent = st.played;
+    $("st-rate").textContent = st.rate + "%";
+    $("st-streak").textContent = st.streak;
+    $("st-best").textContent = st.best;
+  }
+
+  function saveDaily() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ day: games.daily.day, guesses: games.daily.guesses })); }
+    catch (e) { /* ignore */ }
+  }
+
+  // ---------- DOM ----------
+  const $ = (id) => document.getElementById(id);
+  const board = $("board"), keyboard = $("keyboard"), toast = $("toast"), result = $("result");
+  const rowEls = [], tileEls = [], keyEls = {};
+
+  for (let r = 0; r < ROWS; r++) {
+    const row = document.createElement("div");
+    row.className = "row";
+    const tiles = [];
+    for (let c = 0; c < LEN; c++) {
+      const t = document.createElement("div");
+      t.className = "tile";
+      t.style.setProperty("--i", c);
+      t.dataset.state = "empty";
+      row.appendChild(t);
+      tiles.push(t);
+    }
+    board.appendChild(row);
+    rowEls.push(row);
+    tileEls.push(tiles);
+  }
+  KEY_ROWS.forEach((letters) => {
+    const kr = document.createElement("div");
+    kr.className = "krow";
+    for (const ch of letters) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "key";
+      b.textContent = ch;
+      b.dataset.key = ch;
+      kr.appendChild(b);
+      keyEls[ch] = b;
+    }
+    keyboard.appendChild(kr);
+  });
+  const actionRow = document.createElement("div");
+  actionRow.className = "krow";
+  actionRow.innerHTML =
+    '<button type="button" class="key wide enter" data-key="enter">جرّب</button>' +
+    '<button type="button" class="key wide del" data-key="del">امسح</button>';
+  keyboard.appendChild(actionRow);
+
+  let toastTimer = 0;
+  function say(text, ms) {
+    toast.textContent = text;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), ms || 1800);
+  }
+
+  function renderBoard(animateRow) {
+    const g = game(), answer = WORDS[g.wi][0];
+    for (let r = 0; r < ROWS; r++) {
+      const guess = g.guesses[r];
+      const states = guess ? score(guess, answer) : null;
+      const letters = guess ? Array.from(guess) : (r === g.guesses.length && !g.over ? Array.from(g.current) : []);
+      rowEls[r].classList.toggle("reveal", r === animateRow && !reduced);
+      for (let c = 0; c < LEN; c++) {
+        const t = tileEls[r][c];
+        t.textContent = letters[c] || "";
+        const st = states ? states[c] : (letters[c] ? "tbd" : "empty");
+        if (t.dataset.state !== st) t.dataset.state = st;
+      }
+    }
+  }
+  function renderKeys() {
+    const g = game(), answer = WORDS[g.wi][0], best = {};
+    g.guesses.forEach((guess) => {
+      const st = score(guess, answer);
+      Array.from(guess).forEach((ch, i) => { if (!best[ch] || RANK[st[i]] > RANK[best[ch]]) best[ch] = st[i]; });
+    });
+    for (const ch in keyEls) {
+      if (best[ch]) keyEls[ch].dataset.state = best[ch]; else delete keyEls[ch].dataset.state;
+    }
+  }
+  function renderChrome() {
+    const g = game();
+    $("mode-daily").setAttribute("aria-pressed", String(mode === "daily"));
+    $("mode-practice").setAttribute("aria-pressed", String(mode === "practice"));
+    $("game-no").textContent = mode === "daily" ? "كلمة رقم " + (g.day - EPOCH_DAY + 1) : "تدريب بدون حساب";
+    keyboard.hidden = g.over;
+    result.hidden = !g.over;
+    if (g.over) {
+      const [word, gloss] = WORDS[g.wi];
+      $("verdict").textContent = g.won
+        ? WIN_LINES[g.guesses.length - 1] + " (" + g.guesses.length + "/" + ROWS + ")"
+        : "ما صارت هالمرة. الكلمة چانت:";
+      $("answer-word").textContent = word;
+      $("answer-gloss").textContent = gloss;
+      $("stats").hidden = mode !== "daily";
+      $("next-note").textContent = mode === "daily" ? "كلمة اليوم خلصت. الجديدة تجي باچر، ولهسه كمّل تدريب." : "";
+      $("again").textContent = mode === "daily" ? "كمّل تدريب" : "كلمة ثانية";
+      $("share-text").hidden = true;
+      $("share").textContent = "انسخ النتيجة";
+    }
+  }
+  function renderAll() { renderBoard(-1); renderKeys(); renderChrome(); renderStreak(false); }
+
+  // ---------- play ----------
+  function addLetter(ch) {
+    const g = game();
+    if (locked || g.over || Array.from(g.current).length >= LEN) return;
+    g.current += ch;
+    renderBoard(-1);
+  }
+  function del() {
+    const g = game();
+    if (locked || g.over || !g.current) return;
+    g.current = Array.from(g.current).slice(0, -1).join("");
+    renderBoard(-1);
+  }
+  function shakeRow(r) {
+    const row = rowEls[r];
+    if (!row || reduced) return;
+    row.classList.remove("shake");
+    void row.offsetWidth;
+    row.classList.add("shake");
+  }
+  function submit() {
+    const g = game();
+    if (locked || g.over) return;
+    if (Array.from(g.current).length < LEN) {
+      say("ناقصة حروف، كمّل الخمسة");
+      shakeRow(g.guesses.length);
+      return;
+    }
+    if (dictState === "loading") { say("لحظة، القاموس دا يتحمّل"); return; }
+    if (!isWord(g.current)) {
+      say("هاي مو كلمة نعرفها، جرّب غيرها");
+      shakeRow(g.guesses.length);
+      return;
+    }
+    const r = g.guesses.length;
+    g.guesses.push(g.current);
+    g.current = "";
+    settle(g);
+    let justFinished = false;
+    if (mode === "daily") { saveDaily(); justFinished = recordDaily(g); }
+    locked = true;
+    renderBoard(r);
+    setTimeout(() => {
+      locked = false;
+      rowEls[r].classList.remove("reveal");
+      renderKeys();
+      renderChrome();
+      if (justFinished) renderStreak(g.won);
+    }, reduced ? 0 : 1500);
+  }
+  function setMode(m) {
+    if (locked || m === mode) return;
+    mode = m;
+    if (m === "daily" && games.daily.day !== baghdadDay()) games.daily = freshDaily();
+    if (m === "practice" && !games.practice) games.practice = freshPractice();
+    renderAll();
+  }
+  function shareText() {
+    const g = game(), answer = WORDS[g.wi][0];
+    const mark = { correct: "🟩", present: "🟨", absent: "⬛" };
+    const head = "شنو الكلمة؟ " + (mode === "daily" ? "كلمة رقم " + (g.day - EPOCH_DAY + 1) : "تدريب") +
+      " " + (g.won ? g.guesses.length : "X") + "/" + ROWS;
+    const rows = g.guesses.map((guess) => "‏" + score(guess, answer).map((s) => mark[s]).join(""));
+    const lines = [head].concat(rows);
+    if (mode === "daily" && stats().streak > 1) { const n = stats().streak; lines.push("السلسلة: " + (n === 2 ? "يومين" : n + " " + daysWord(n))); }
+    return lines.join("\n");
+  }
+
+  // ---------- events ----------
+  keyboard.addEventListener("mousedown", (e) => e.preventDefault()); // keep focus off the keys so Enter still submits
+  keyboard.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-key]");
+    if (!b) return;
+    const k = b.dataset.key;
+    if (k === "enter") submit(); else if (k === "del") del(); else addLetter(k);
+  });
+  document.addEventListener("keydown", (e) => {
+    if ($("help").open || e.ctrlKey || e.metaKey || e.altKey) return;
+    const onControl = e.target instanceof HTMLElement && e.target.closest("button, textarea");
+    if (e.key === "Enter") { if (!onControl) { e.preventDefault(); submit(); } return; }
+    if (e.key === "Backspace") { if (!(e.target instanceof HTMLTextAreaElement)) { e.preventDefault(); del(); } return; }
+    if (Array.from(e.key).length !== 1) return;
+    const ch = NORMAL[e.key] || e.key;
+    if (VALID.has(ch)) addLetter(ch);
+  });
+  // Drop focus after a click so the physical Enter key goes back to submitting the guess.
+  $("mode-daily").addEventListener("click", (e) => { setMode("daily"); e.currentTarget.blur(); });
+  $("mode-practice").addEventListener("click", (e) => { setMode("practice"); e.currentTarget.blur(); });
+  $("again").addEventListener("click", () => {
+    if (mode === "daily") { setMode("practice"); if (games.practice.over) { games.practice = freshPractice(); renderAll(); } }
+    else { games.practice = freshPractice(); renderAll(); }
+  });
+  $("share").addEventListener("click", () => {
+    const text = shareText();
+    const fallback = () => {
+      const box = $("share-text");
+      box.value = text;
+      box.hidden = false;
+      box.focus();
+      box.select();
+      $("share").textContent = "حدّد النص وانسخه";
+    };
+    try {
+      navigator.clipboard.writeText(text).then(() => { $("share").textContent = "انسخت ✓"; }, fallback);
+    } catch (err) { fallback(); }
+  });
+  const help = $("help");
+  $("help-open").addEventListener("click", () => { if (help.showModal) help.showModal(); else help.setAttribute("open", ""); });
+  $("help-close").addEventListener("click", () => { if (help.close) help.close(); else help.removeAttribute("open"); });
+  help.addEventListener("click", (e) => { if (e.target === help && help.close) help.close(); });
+  help.addEventListener("close", () => { if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); });
+
+  // ---------- boot (keeps a game in progress across a republish) ----------
+  function start(data) {
+    games.daily = freshDaily();
+    if (data && data.games) {
+      const d = data.games.daily, p = data.games.practice;
+      if (d && d.day === games.daily.day) {
+        games.daily.guesses = cleanGuesses(d.guesses);
+        games.daily.current = typeof d.current === "string" ? d.current : "";
+        settle(games.daily);
+      }
+      if (p && Number.isInteger(p.wi) && p.wi >= 0 && p.wi < N) {
+        games.practice = settle({ wi: p.wi, guesses: cleanGuesses(p.guesses), current: typeof p.current === "string" ? p.current : "" });
+      }
+      if (data.mode === "practice" && games.practice) mode = "practice";
+    }
+    recordDaily(games.daily);
+    renderAll();
+  }
+  loadDict();
+  const hot = window.claude && window.claude.hot;
+  if (hot && hot.snapshot) hot.snapshot(() => ({ mode, games }));
+  if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+})();
+</script>
+</body>
+</html>
