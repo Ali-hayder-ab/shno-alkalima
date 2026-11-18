@@ -124,7 +124,7 @@ h1 {
   max-width: 500px;
   margin: 0 auto;
   padding: 12px 16px 0;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
 }
 .seg { display: inline-flex; gap: 6px; }
 .seg button {
@@ -341,9 +341,6 @@ dialog .btn { width: 100%; margin-top: 12px; }
     <div class="seg" role="group" aria-label="نوع اللعبة">
       <button type="button" id="mode-daily" aria-pressed="true">كلمة اليوم</button>
       <button type="button" id="mode-practice" aria-pressed="false">تدريب</button>
-    </div>
-    <div class="meta">
-      <span class="game-no" id="game-no"></span>
     </div>
   </div>
 
@@ -671,7 +668,6 @@ dialog .btn { width: 100%; margin-top: 12px; }
     const g = game();
     $("mode-daily").setAttribute("aria-pressed", String(mode === "daily"));
     $("mode-practice").setAttribute("aria-pressed", String(mode === "practice"));
-    $("game-no").textContent = mode === "daily" ? "كلمة رقم " + (g.day - EPOCH_DAY + 1) : "تدريب بدون حساب";
     keyboard.hidden = g.over;
     result.hidden = !g.over;
     if (g.over) {
