@@ -112,13 +112,15 @@ h1 { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; letter-spac
 .meta { display: flex; align-items: center; gap: 8px; }
 .streak {
   display: inline-flex; align-items: center; gap: 4px;
-  height: 26px; padding: 0 10px 0 8px;
+  height: 26px; padding: 0 10px;
+  line-height: 1;
   border-radius: 999px;
   background: var(--key);
   color: var(--ink-2);
   font-size: 14px; font-variant-numeric: tabular-nums;
 }
-.streak svg { width: 14px; height: 14px; fill: currentColor; }
+.streak svg { height: 13px; width: auto; flex: none; fill: currentColor; }
+.streak b, #streak-unit { display: block; padding-top: 1px; } /* Arabic glyphs sit low in their line box */
 .streak b { font-weight: 700; }
 .streak[hidden] { display: none; }
 #streak-unit { font-size: 12px; font-weight: 500; }
@@ -322,7 +324,7 @@ dialog .btn { width: 100%; margin-top: 8px; }
     <div class="meta">
       <span class="game-no" id="game-no"></span>
       <span class="streak" id="streak" title="أيام متتالية فزت بيها بكلمة اليوم">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.6 3.2-1.4 4.9-2.9 6.6C7.6 10.8 6.5 12.6 6.5 15a5.5 5.5 0 0 0 11 0c0-2.1-.9-3.7-2-5 .1 1.6-.5 2.8-1.6 3.4.3-3.9-1-7.6-1.9-10.9Z"/></svg>
+        <svg viewBox="6.4 2.4 11.2 18.2" aria-hidden="true"><path d="M12 2.5c.6 3.2-1.4 4.9-2.9 6.6C7.6 10.8 6.5 12.6 6.5 15a5.5 5.5 0 0 0 11 0c0-2.1-.9-3.7-2-5 .1 1.6-.5 2.8-1.6 3.4.3-3.9-1-7.6-1.9-10.9Z"/></svg>
         <b id="streak-n">0</b><span id="streak-unit"></span>
       </span>
     </div>
